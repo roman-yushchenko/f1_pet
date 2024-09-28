@@ -1,0 +1,21 @@
+select 
+    concat(forename,' ',surname) as driver_name
+  ,drivers.nationality
+  ,drivers.number
+  ,races.year
+  ,races.name
+  ,races.raceid
+  ,races.round
+  ,safe_cast(points as int64) as points
+  ,COALESCE(SAFE_CAST(sprints.position AS INT64), 20) AS position -- надаємо останнє місце гонщикам які не фінішували (20)
+  ,sprints.grid
+  ,sprints.fastestLapTime
+  ,status.status
+
+
+from formula-1-437007.formula_1.sprint_results as sprints
+left join formula-1-437007.formula_1.races as races on sprints.raceId = races.raceId   -- тільки спринт-гонки
+join formula-1-437007.formula_1.drivers as drivers on sprints.driverid = drivers.driverid
+join formula-1-437007.formula_1.status as status on status.statusId = sprints.statusId
+
+order by year asc,round asc,points desc,position asc
