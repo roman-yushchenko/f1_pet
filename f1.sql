@@ -26,7 +26,7 @@ WITH
     raceid,
     driverId,
     milliseconds AS fastest_lap,
-    ROW_NUMBER() OVER (PARTITION BY raceid ORDER BY milliseconds) AS lap_rank   -- визначаю найшвидше очко у кожній гонці
+    ROW_NUMBER() OVER (PARTITION BY raceid ORDER BY milliseconds) AS lap_rank   -- визначаю найшвидше коло у кожній гонці
   FROM
     formula-1-437007.formula_1.lap_times ),
 
@@ -58,7 +58,7 @@ WITH
     fl.raceid = top.raceid
     AND fl.driverid = top.driverid
   WHERE
-    fl.lap_rank = 1 )                -- Тільки пілот з найшвидшим колом отримує +1 бал
+    fl.lap_rank = 1 )                -- Тільки пілот з найшвидшим колом і з топ10 отримує +1 бал
 
 
 
@@ -76,8 +76,8 @@ WITH
   
     races.name AS grand_prix_name,
     races.date AS gp_date,
-    COALESCE(SAFE_CAST(results.position AS int64),20) AS position,   -- надаю останнє місце(20) усім гонщикам що не фінішували
-    np.new_points + COALESCE(ep.extra_point, 0) AS new_total_points,                    -- (на очки це ніяк не вплине)
+    COALESCE(SAFE_CAST(results.position AS int64),20) AS position,  
+    np.new_points + COALESCE(ep.extra_point, 0) AS new_total_points,           -- надаю  місце за яке не отримується очок (20) усім гонщикам що не фінішували         
     results.points,                                                              -- для можливого порівняння в майбутньому
     results.fastestLapTime,
     results.fastestLapSpeed,
