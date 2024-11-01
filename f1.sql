@@ -1,3 +1,4 @@
+-- переформатовую систему нарахування очок для діючого регламенту
 WITH
   new_points AS (
   SELECT
@@ -14,23 +15,23 @@ WITH
       WHEN position = '10' THEN 1
       ELSE 0
   END
-    AS new_points,                      -- переформатовую систему нарахування очок для діючого регламенту
+    AS new_points,                      
     raceid,
-    driverid                            -- (якщо гонщик проїхав найшвидше коло в гонці і потрапив у топ-10, то він отримує 1 бонусне очко)
+    driverid                            
   FROM
     formula-1-437007.formula_1.results ),  
 
-
+-- визначаю найшвидше очко у кожній гонці
   fastest_lap AS (
   SELECT
     raceid,
     driverId,
     milliseconds AS fastest_lap,
-    ROW_NUMBER() OVER (PARTITION BY raceid ORDER BY milliseconds) AS lap_rank   -- визначаю найшвидше коло у кожній гонці
+    ROW_NUMBER() OVER (PARTITION BY raceid ORDER BY milliseconds) AS lap_rank 
   FROM
     formula-1-437007.formula_1.lap_times ),
 
-
+-- визначаю топ-10 кожної гонки
   top_10_position AS (
   SELECT
     driverId,
@@ -39,9 +40,9 @@ WITH
   FROM
     formula-1-437007.formula_1.results
   WHERE
-    SAFE_CAST(position AS INT64) <= 10 ),   -- визначаю топ-10 кожної гонки
+    SAFE_CAST(position AS INT64) <= 10 ),   
 
-
+-- пілот з найшвидшим колом та в топ 10 отримує додатковий бал
   extra_point AS (
   SELECT
     CASE
@@ -58,7 +59,7 @@ WITH
     fl.raceid = top.raceid
     AND fl.driverid = top.driverid
   WHERE
-    fl.lap_rank = 1 )                -- Тільки пілот з найшвидшим колом і з топ10 отримує +1 бал
+    fl.lap_rank = 1 )                
 
 
 
@@ -66,20 +67,19 @@ WITH
     
     drivers.driverId,
     drivers.dob AS date_of_born,
-    drivers.nationality,
+    drivers.nationality, 
     COALESCE(CASE WHEN code LIKE "_N"THEN NULL ELSE code END,UPPER(SUBSTRING(driverref,1,3))) AS driver_code,  -- надаю код(зазвичай перші три літери прізвища) кожному гонщику(в деяких код відсутній)
     concat (drivers.forename, ' ', Drivers.surname) AS driver_name,
-
     constructors.name AS team_name,
     constructors.nationality AS team_nationality,
-
-  
     races.name AS grand_prix_name,
     races.date AS gp_date,
-    COALESCE(SAFE_CAST(results.position AS int64),20) AS position,  
-    np.new_points + COALESCE(ep.extra_point, 0) AS new_total_points,           -- надаю  місце за яке не отримується очок (20) усім гонщикам що не фінішували         
-    results.points,                                                              -- для можливого порівняння в майбутньому
+    COALESCE(SAFE_CAST(results.position AS int64),20) AS position,   -- надаю останнє місце(20) усім гонщикам що не фінішували
+    np.new_points + COALESCE(ep.extra_point, 0) AS new_total_points,                    --(на очки це ніяк не вплине)
+    results.points,      
     results.fastestLapTime,
+    SUM(np.new_points + COALESCE(ep.extra_point, 0)) OVER (PARTITION BY results.driverId, extract(year from races.date) ORDER BY races.date) AS  cumulative_new_points   ,
+    SUM(points) OVER (PARTITION BY results.driverId, extract(year from races.date) ORDER BY races.date) AS    cumulative_points ,
     results.fastestLapSpeed,
     circuits.country AS gp_country,
     circuits.location AS gp_location,
@@ -120,4 +120,4 @@ WITH
     ON 
     constructors.constructorID = results.constructorID
   WHERE
-    DATE < CURRENT_DATE() -- тільки гонки які відбулися (для 07.07.2024го року)
+    DATE < CURRENT_DATE() 
