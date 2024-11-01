@@ -120,4 +120,4 @@ WITH
     ON 
     constructors.constructorID = results.constructorID
   WHERE
-    DATE < CURRENT_DATE() -- тільки гонки які відбулися (для 2024го року)
+    DATE < CURRENT_DATE() -- тільки гонки які відбулися (для 07.07.2024го року)
